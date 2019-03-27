@@ -11,7 +11,7 @@ from collections import Counter, deque, defaultdict
 
 import typing
 from typing import Iterable, Tuple, Deque, Iterator, Sequence, Dict
-from typing import TypeVar, NewType
+from typing import TypeVar
 
 T = TypeVar('T')
 
@@ -36,14 +36,19 @@ def preprocess_line(line: str) -> str:
     """
     Perform standard normalization on input text for modelling
     """
+    # remove any t.co urls, as they only confound analysis
+    line = re.sub(r'\bhttps?://t\.co/\w{8,16}', '', line)
+
     # NFC unicode normalization is best for language detection, as combined glyphs give better information density
     # NFKC destroys some information by converting compatibility characters, so we don't use that.
     line = normalize('NFC', line)
     # leading and trailing whitespace don't carry much information, and are most likely artifacts of the data collection
     # process, so get rid of them
     line = line.strip()
-    # force everything into
-    line = line.upper().lower()
+    # force everything into uppercase, as this preserves the most information (e.g. German straub decomposes into 2 ss when lowercased)
+    line = line.upper()
+    # normalize the unicode again because some upper case letters are decomposed into multiple lowercase letters
+    line = normalize('NFC', line)
     return line
 
 
@@ -126,7 +131,7 @@ class LM:
 
             ngram, log_prob = line.rsplit('\t', maxsplit=1)
 
-            words = tuple(re.split(ngram_pattern, ngram))
+            words = tuple(re.findall(ngram_pattern, ngram))
             current[words] = float(log_prob)
 
     def _interpolated_prob(self, words: Tuple[str, str, str], weights: Tuple[float, float, float]) -> float:
@@ -173,12 +178,8 @@ class LM:
 
             line_entropy = self._line_entropy(line, weights)
             entropy += line_entropy
-            print(f'{line} = {line_entropy}')
             count += 1
-            if count > 3:
-                break
 
-        print(f'average entropy={entropy/count}')
         return 2 ** (entropy / count)
 
 
@@ -244,10 +245,8 @@ def main():
         for model_language in languages:
             perplexity = eval(f'data/{test_language}.test.csv', f'data/{model_language}.lm', weights)
             results[model_language][test_language] = perplexity
-            break
-        break
 
-    # print(pd.DataFrame.from_dict(results).to_latex())
+    print(pd.DataFrame.from_dict(results).to_latex())
 
 
 if __name__ == '__main__':
