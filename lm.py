@@ -56,7 +56,7 @@ class LM:
     UNSEEN_NGRAM = '<unk>'
 
     def __init__(self):
-        self.unigrams: Dict[str, float] = {}
+        self.unigrams: Dict[Tuple[str], float] = {}
         self.bigrams: Dict[Tuple[str, ...], float] = {}
         self.trigrams: Dict[Tuple[str, ...], float] = {}
 
@@ -134,9 +134,9 @@ class LM:
 
     def _interpolated_prob(self, words: Tuple[str, str, str], weights: Tuple[float, float, float]) -> float:
         a, b, c = words
-        unigram_logprob = self.unigrams.get(c)
+        unigram_logprob = self.unigrams.get((c,))
         if unigram_logprob is None:
-            unigram_logprob = self.unigrams[self.UNSEEN_NGRAM]
+            unigram_logprob = self.unigrams[(self.UNSEEN_NGRAM,)]
         unigram_prob = 2 ** unigram_logprob
 
         bigram_logprob = self.bigrams.get((b, c))
