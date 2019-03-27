@@ -42,13 +42,11 @@ def preprocess_line(line: str) -> str:
     # NFC unicode normalization is best for language detection, as combined glyphs give better information density
     # NFKC destroys some information by converting compatibility characters, so we don't use that.
     line = normalize('NFC', line)
+
     # leading and trailing whitespace don't carry much information, and are most likely artifacts of the data collection
     # process, so get rid of them
     line = line.strip()
-    # force everything into uppercase, as this preserves the most information (e.g. German straub decomposes into 2 ss when lowercased)
-    line = line.upper()
-    # normalize the unicode again because some upper case letters are decomposed into multiple lowercase letters
-    line = normalize('NFC', line)
+
     return line
 
 
